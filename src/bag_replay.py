@@ -50,7 +50,7 @@ def replay_bag(bag_file, _start_time, _end_time):
         rospy.loginfo("Replaying message on topic ")
         rospy.loginfo(topic)
         rospy.loginfo(t.to_sec())
-        pub = rospy.Publisher(topic, type(msg), queue_size=10)
+        pub = rospy.Publisher("/replay" +topic, type(msg), queue_size=10)
         pub.publish(msg)
         #rospy.sleep(0.1)  # Adjust sleep time as needed
 
