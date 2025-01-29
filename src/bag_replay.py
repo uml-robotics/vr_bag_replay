@@ -7,6 +7,7 @@ from std_msgs.msg import Int32
 from std_msgs.msg import String
 from std_msgs.msg import Time
 
+repub_topics = ['/clock','/head_camera/rgb/image_raw/compressed']
 current_replay = 0
 
 list_of_replays = ["bags/replay.bag"]
@@ -44,7 +45,7 @@ def replay_bag(bag_file, _start_time, _end_time):
     _start_time = rospy.Time.from_sec(_start_time)
     _end_time = rospy.Time.from_sec(_end_time)
     
-    for topic, msg, t in bag.read_messages(start_time=_start_time, end_time=_end_time, topics=['/clock','/head_camera/rgb/image_raw/compressed']):
+    for topic, msg, t in bag.read_messages(start_time=_start_time, end_time=_end_time, topics=repub_topics):
         if rospy.is_shutdown():
             break
         rospy.loginfo("Replaying message on topic ")
