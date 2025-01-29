@@ -6,26 +6,37 @@ from datetime import datetime
 from std_msgs.msg import Int32
 from std_msgs.msg import String
 from std_msgs.msg import Time
+import os
 
-repub_topics = ['/clock','/head_camera/rgb/image_raw/compressed']
+repub_topics = [
+    #'/clock',
+    '/head_camera/rgb/image_raw/compressed',
+    '/head_camera/depth_registered/points/filtered/throttled',
+    '/base_scan',
+    '/gripper_goal/current',
+    '/joint_states'
+    ]
 current_replay = 0
 
-list_of_replays = ["bags/replay.bag"]
-current_time = 0
-current_duration = 1666048230 - 1666048219
+list_of_replays = []
+current_time = 0.0
+#current_duration = 1666048230 - 1666048219
 
-bag_start = 1666048219
-bag_end = 1666048230
+#bag_start = 1666048219
+#bag_end = 1666048230
 
 replay_stop = "stop"
 replay_play = "play"
+
 replay_mode = "stop"
 
 def set_current_mode(msg):
     global replay_mode
+    global current_time
     rospy.loginfo("Setting current replay mode to")
     rospy.loginfo(msg.data)
     replay_mode = msg.data
+    current_time = 0
 
 def set_current_time(msg):
     global current_time
@@ -37,25 +48,64 @@ def set_current_replay(msg):
     rospy.loginfo("Setting Active replay ID to")
     rospy.loginfo(msg)
     current_replay = msg.data
+    load_bag("/bags/" + list_of_replays[current_replay])
     
     
+def load_bag(bag_file):
+    global bag_start, bag_end, current_duration
+    bag = rosbag.Bag(bag_file)
+    bag_start = bag.get_start_time()
+    bag_end = bag.get_end_time()
+    current_duration = bag_end - bag_start
+    
+    for topic, msg, t in bag.read_messages( topics="/gripper_goal/current"):
+        pub = rospy.Publisher("/replay" +topic, type(msg), queue_size=100)
+        rospy.loginfo("We got a gripper goal!")
+        break
+    rospy.loginfo(current_duration)
 
 def replay_bag(bag_file, _start_time, _end_time):
+    global replay_mode, replay_stop, replay_play, current_time
     bag = rosbag.Bag(bag_file)
-    _start_time = rospy.Time.from_sec(_start_time)
-    _end_time = rospy.Time.from_sec(_end_time)
-    
-    for topic, msg, t in bag.read_messages(start_time=_start_time, end_time=_end_time, topics=repub_topics):
+    #current_duration = bag.get_end_time() - bag.get_start_time()
+    #rospy.loginfo(current_duration)
+    _start_time = rospy.Time.from_sec(bag.get_start_time())
+    _end_time = rospy.Time.from_sec(bag.get_end_time())
+    #_start_time += current_time
+    if(_end_time < _start_time):
+        rospy.loginfo("End time is before start time")
+        bag.close()
+        return
+    #start_time=_start_time, end_time=_end_time,
+    for topic, msg, t in bag.read_messages( topics=repub_topics):
         if rospy.is_shutdown():
+            rospy.loginfo("Shutdown signal received")
+            bag.close()
+            break
+        if replay_mode == replay_stop:
+            rospy.loginfo("Replay mode is stop")
+            bag.close()
             break
         rospy.loginfo("Replaying message on topic ")
         rospy.loginfo(topic)
         rospy.loginfo(t.to_sec())
-        pub = rospy.Publisher("/replay" +topic, type(msg), queue_size=10)
+        pub = rospy.Publisher("/replay" +topic, type(msg), queue_size=100)
         pub.publish(msg)
-        #rospy.sleep(0.1)  # Adjust sleep time as needed
-
+        rospy.sleep(0.001)  # Adjust sleep time as needed
+    replay_mode = replay_stop
     bag.close()
+    
+#def close_bag():
+#    rospy.loginfo("Closing bag")
+#    bag.close()
+
+def list_files(directory):
+    return os.listdir(directory)
+    #files = []
+    #for f in os.listdir(directory):
+    #    if os.path.isfile(f):
+    #        files.append(f)
+    #return files
 
 if __name__ == "__main__":
     #global list_of_replays
@@ -63,18 +113,24 @@ if __name__ == "__main__":
     rospy.Subscriber('/set_current_replay', Int32, set_current_replay)
     rospy.Subscriber('/set_current_time', Int32, set_current_time)
     rospy.Subscriber('/set_replay_mode', String, set_current_mode)
+    
+    #rospy.Service()
+    
     list_of_replays_pub = rospy.Publisher('/list_of_replays', String, queue_size=10)
     time_pub = rospy.Publisher('/replay_time', Time, queue_size=10)
     duration_pub = rospy.Publisher('/replay_duration', Time, queue_size=10)
     
     
     rate = rospy.Rate(10)
+    list_of_replays_msg = ""#todo sccan bag directory to dynamically load
+    list_of_replays = list_files("/bags")
+    print(list_of_replays)
+    
+    for i in range(0, len(list_of_replays)):
+        list_of_replays_msg+=list_of_replays[i] + ","
+    list_of_replays_pub.publish(list_of_replays_msg)
+    load_bag("/bags/" + list_of_replays[0]) #initialize with first bag to start
     while not rospy.is_shutdown():
-        list_of_replays_msg = ""
-        for i in range(0, len(list_of_replays)):
-            list_of_replays_msg+=list_of_replays[i] + ","
-        list_of_replays_pub.publish(list_of_replays_msg)
-        
         current_time_msg = Time()
         current_time_msg.data.secs = current_time
         time_pub.publish(current_time_msg)
@@ -82,22 +138,15 @@ if __name__ == "__main__":
         current_duration_msg = Time()
         current_duration_msg.data.secs = current_duration
         duration_pub.publish(current_duration_msg)
-        print(replay_mode)
-        #print(replay_play)
+
         if replay_mode == replay_play and current_time < current_duration:
             rospy.loginfo("Replaying bag")
             rospy.loginfo(list_of_replays)
-            replay_bag(list_of_replays[current_replay], bag_start + current_time, bag_start + current_time + 1)
+            replay_bag("/bags/" + list_of_replays[current_replay], bag_start , bag_start)
             current_time += 1
         else:
             rospy.loginfo("Not replaying bag")
             replay_mode = replay_stop
         
         rate.sleep()
-    
-    #bag_file = 'bags/replay.bag'
-    #start_time = datetime.strptime('2022-10-17 19:10:23', '%Y-%m-%d %H:%M:%S').timestamp()
-    #end_time = datetime.strptime('2022-10-17 19:10:23', '%Y-%m-%d %H:%M:%S').timestamp()
-    #start_time = 1666048219;
-    #end_time = 1666048230
-    #replay_bag(bag_file, start_time, end_time)
+#``` close_bag()
