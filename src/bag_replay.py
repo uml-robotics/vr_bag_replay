@@ -138,6 +138,7 @@ if __name__ == "__main__":
         current_duration_msg = Time()
         current_duration_msg.data.secs = current_duration
         duration_pub.publish(current_duration_msg)
+        list_of_replays_pub.publish(list_of_replays_msg)
 
         if replay_mode == replay_play and current_time < current_duration:
             rospy.loginfo("Replaying bag")
@@ -147,6 +148,5 @@ if __name__ == "__main__":
         else:
             rospy.loginfo("Not replaying bag")
             replay_mode = replay_stop
-        
         rate.sleep()
 #``` close_bag()
