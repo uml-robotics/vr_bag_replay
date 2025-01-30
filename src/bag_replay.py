@@ -16,7 +16,7 @@ repub_topics = [
     '/gripper_goal/current',
     '/joint_states'
     ]
-current_replay = 0
+current_replay = ""
 
 list_of_replays = []
 current_time = 0.0
@@ -48,7 +48,10 @@ def set_current_replay(msg):
     rospy.loginfo("Setting Active replay ID to")
     rospy.loginfo(msg)
     current_replay = msg.data
-    load_bag("/bags/" + list_of_replays[current_replay])
+    if current_replay in list_of_replays:
+        load_bag("/bags/" + current_replay)
+    else:
+        rospy.loginfo("Invalid replay ID")
     
     
 def load_bag(bag_file):
@@ -110,7 +113,7 @@ def list_files(directory):
 if __name__ == "__main__":
     #global list_of_replays
     rospy.init_node('bag_replay', anonymous=True)
-    rospy.Subscriber('/set_current_replay', Int32, set_current_replay)
+    rospy.Subscriber('/set_current_replay', String, set_current_replay)
     rospy.Subscriber('/set_current_time', Int32, set_current_time)
     rospy.Subscriber('/set_replay_mode', String, set_current_mode)
     
@@ -124,13 +127,20 @@ if __name__ == "__main__":
     rate = rospy.Rate(10)
     list_of_replays_msg = ""#todo sccan bag directory to dynamically load
     list_of_replays = list_files("/bags")
-    print(list_of_replays)
+    #print(list_of_replays)
     
     for i in range(0, len(list_of_replays)):
         list_of_replays_msg+=list_of_replays[i] + ","
-    list_of_replays_pub.publish(list_of_replays_msg)
+    #list_of_replays_pub.publish(list_of_replays_msg)
     load_bag("/bags/" + list_of_replays[0]) #initialize with first bag to start
     while not rospy.is_shutdown():
+        if(list_files("/bags") != list_of_replays):
+            print("New bag detected, reloading")
+            list_of_replays = list_files("/bags")
+            list_of_replays_msg = ""
+            for i in range(0, len(list_of_replays)):
+                list_of_replays_msg+=list_of_replays[i] + ","
+            
         current_time_msg = Time()
         current_time_msg.data.secs = current_time
         time_pub.publish(current_time_msg)
@@ -146,7 +156,7 @@ if __name__ == "__main__":
             replay_bag("/bags/" + list_of_replays[current_replay], bag_start , bag_start)
             current_time += 1
         else:
-            rospy.loginfo("Not replaying bag")
+            #rospy.loginfo("Not replaying bag")
             replay_mode = replay_stop
         rate.sleep()
 #``` close_bag()
