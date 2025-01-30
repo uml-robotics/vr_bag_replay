@@ -45,6 +45,7 @@ def set_current_time(msg):
     current_time = msg.data#.secs
     
 def set_current_replay(msg):
+    global current_replay
     rospy.loginfo("Setting Active replay ID to")
     rospy.loginfo(msg)
     current_replay = msg.data
@@ -104,11 +105,6 @@ def replay_bag(bag_file, _start_time, _end_time):
 
 def list_files(directory):
     return os.listdir(directory)
-    #files = []
-    #for f in os.listdir(directory):
-    #    if os.path.isfile(f):
-    #        files.append(f)
-    #return files
 
 if __name__ == "__main__":
     #global list_of_replays
@@ -132,7 +128,8 @@ if __name__ == "__main__":
     for i in range(0, len(list_of_replays)):
         list_of_replays_msg+=list_of_replays[i] + ","
     #list_of_replays_pub.publish(list_of_replays_msg)
-    load_bag("/bags/" + list_of_replays[0]) #initialize with first bag to start
+    if(len(list_of_replays) > 0):
+        load_bag("/bags/" + list_of_replays[0]) #initialize with first bag to start
     while not rospy.is_shutdown():
         if(list_files("/bags") != list_of_replays):
             print("New bag detected, reloading")
@@ -153,7 +150,7 @@ if __name__ == "__main__":
         if replay_mode == replay_play and current_time < current_duration:
             rospy.loginfo("Replaying bag")
             rospy.loginfo(list_of_replays)
-            replay_bag("/bags/" + list_of_replays[current_replay], bag_start , bag_start)
+            replay_bag("/bags/" + current_replay, bag_start , bag_start)
             current_time += 1
         else:
             #rospy.loginfo("Not replaying bag")
