@@ -9,7 +9,7 @@ from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import PoseArray
 from std_srvs.srv import Empty, EmptyResponse
-
+import os
 #Topics To Record
 #JointStates
 #SensorMsgsImage
@@ -45,14 +45,21 @@ class RosbagRecorder:
         rospy.loginfo("Shutting down and closing bag file.")
         #self.bag.close()
         
+    def list_files(self, directory):
+        return os.listdir(directory)
+    
+    def get_next_bag(self):
+        files = self.list_files('/bags/')
+        return "/bags/output" + str(len(files) + 1) + ".bag"
+        
     def start_record(self, req):
-        rospy.loginfo("Recording to output.bag")
+        rospy.loginfo("Recording to " + self.get_next_bag())
         self.write_to_bag = True
-        self.bag = rosbag.Bag('/bags/output.bag', 'w')
+        self.bag = rosbag.Bag(self.get_next_bag(), 'w')
         self.joint_state_sub =  rospy.Subscriber('/joint_states', JointState, self.jointStateCallback)
         self.point_cloud_sub =  rospy.Subscriber('/head_camera/depth_registered/points/filtered/throttled', PointCloud2, self.pointCloudCallback)
         self.laser_scan_sub =  rospy.Subscriber('/base_scan', LaserScan, self.laserCallback)
-        #self.image_sub =  rospy.Subscriber('/head_camera/rgb/image_raw/compressed', CompressedImage, self.imageCallback)
+        self.image_sub =  rospy.Subscriber('/head_camera/rgb/image_raw/compressed', CompressedImage, self.imageCallback)
         self.gripper_goal_sub =  rospy.Subscriber('/gripper_goal/current', PoseArray, self.goalCallback)
         return EmptyResponse()
 
@@ -62,7 +69,7 @@ class RosbagRecorder:
         self.joint_state_sub.unregister()
         self.point_cloud_sub.unregister()
         self.laser_scan_sub.unregister()
-        #self.image_sub.unregister()
+        self.image_sub.unregister()
         self.gripper_goal_sub.unregister()
         self.bag.close()
         return EmptyResponse()
