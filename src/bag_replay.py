@@ -16,7 +16,7 @@ repub_topics = [
     '/gripper_goal/current',
     '/joint_states'
     ]
-current_replay = ""
+current_replay = "output.bag"
 
 list_of_replays = []
 current_time = 0.0
