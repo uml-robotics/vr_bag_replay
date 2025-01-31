@@ -16,6 +16,7 @@ repub_topics = [
     '/base_scan',
     #'/gripper_goal/current',
     '/joint_states'
+    '/functional_gripper_goal'
     ]
 current_replay = "output.bag"
 current_duration = 0

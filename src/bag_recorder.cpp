@@ -27,6 +27,7 @@ public:
         write_to_bag = true;
         bag.open(bag_file, rosbag::bagmode::Write);
         joint_state_sub = nh.subscribe("/joint_states", 1000, &RosbagRecorder::jointStateCallback, this);
+        gripper_state_sub = nh.subscribe("/functional_gripper_goal", 1000, &RosbagRecorder::gripperStateCallback, this);
         point_cloud_sub = nh.subscribe("/head_camera/depth_registered/points/filtered/throttled/", 1000, &RosbagRecorder::pointCloudCallback, this);
         laser_sub = nh.subscribe("/base_scan", 1000, &RosbagRecorder::laserCallback, this);
         image_sub = nh.subscribe("/head_camera/rgb/image_raw/compressed", 1000, &RosbagRecorder::imageCallback, this);
@@ -39,6 +40,7 @@ public:
         write_to_bag = false;
         bag.close();
         joint_state_sub.shutdown();
+        gripper_state_sub.shutdown();
         point_cloud_sub.shutdown();
         laser_sub.shutdown();
         image_sub.shutdown();
@@ -49,6 +51,12 @@ public:
     void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg) {
         if (write_to_bag) {
             bag.write("/joint_states", ros::Time::now(), msg);
+        }
+    }
+    
+    void gripperStateCallback(const sensor_msgs::JointState::ConstPtr& msg) {
+        if (write_to_bag) {
+            bag.write("/functional_gripper_goal", ros::Time::now(), msg);
         }
     }
 
@@ -90,6 +98,7 @@ private:
     ros::ServiceServer start_service;
     ros::ServiceServer stop_service;
     ros::Subscriber joint_state_sub;
+    ros::Subscriber gripper_state_sub;
     ros::Subscriber point_cloud_sub;
     ros::Subscriber laser_sub;
     ros::Subscriber image_sub;
