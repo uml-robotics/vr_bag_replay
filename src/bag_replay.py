@@ -95,7 +95,7 @@ def replay_bag(bag_file, _start_time, _end_time):
         rospy.loginfo(t.to_sec())
         pub = rospy.Publisher("/replay" +topic, type(msg), queue_size=100)
         pub.publish(msg)
-        rospy.sleep(0.001)  # Adjust sleep time as needed
+        rospy.sleep(0.01)  # Adjust sleep time as needed
     replay_mode = replay_stop
     bag.close()
     
@@ -129,6 +129,7 @@ if __name__ == "__main__":
         list_of_replays_msg+=list_of_replays[i] + ","
     #list_of_replays_pub.publish(list_of_replays_msg)
     if(len(list_of_replays) > 0):
+        print(list_of_replays[0])
         load_bag("/bags/" + list_of_replays[0]) #initialize with first bag to start
     while not rospy.is_shutdown():
         if(list_files("/bags") != list_of_replays):
