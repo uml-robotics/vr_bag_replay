@@ -14,8 +14,8 @@ repub_topics = [
     '/head_camera/rgb/image_raw/compressed',
     '/head_camera/depth_registered/points/filtered/throttled',
     '/base_scan',
-    #'/gripper_goal/current',
-    '/joint_states'
+    '/gripper_goal/current',
+    '/joint_states',
     '/functional_gripper_goal'
     ]
 current_replay = "output.bag"
