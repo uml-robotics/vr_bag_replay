@@ -48,31 +48,31 @@ public:
 
     void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg) {
         if (write_to_bag) {
-            bag.write("/joint_states", msg->header.stamp, msg);
+            bag.write("/joint_states", ros::Time::now(), msg);
         }
     }
 
     void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg) {
         if (write_to_bag) {
-            bag.write("/head_camera/depth_registered/points/filtered/throttled/", msg->header.stamp, msg);
+            bag.write("/head_camera/depth_registered/points/filtered/throttled/", ros::Time::now(), msg);
         }
     }
 
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg) {
         if (write_to_bag) {
-            bag.write("/base_scan", msg->header.stamp, msg);
+            bag.write("/base_scan", ros::Time::now(), msg);
         }
     }
 
     void imageCallback(const sensor_msgs::CompressedImage::ConstPtr& msg) {
         if (write_to_bag) {
-            bag.write("/head_camera/rgb/image_raw/compressed", msg->header.stamp, msg);
+            bag.write("/head_camera/rgb/image_raw/compressed", ros::Time::now(), msg);
         }
     }
 
     void goalCallback(const geometry_msgs::PoseArray::ConstPtr& msg) {
         if (write_to_bag) {
-            bag.write("/gripper_goal/current", msg->header.stamp, msg);
+            bag.write("/gripper_goal/current", ros::Time::now(), msg);
         }
     }
 
